@@ -1,0 +1,49 @@
+{
+  "status": "success",
+  "language": "Tamil",
+  "callId": "RERUN7-chunk_000",
+  "transcript": "ஹலோ ஹலோ ஆ சொல்லுங்க யாரு கான்செல்ட் நான் காய்லே பேசுறேங்களா ஆமா நீங்கள் கான்செல்ட் கூவில இருந்து கால் பண்ணிருக்கேன் கான்செல்ட் எங்கிருந்து நீங்கள் கூவி ஐஐடி மெட்ராஸ் ரிசர்ச் பார்சலர் இருந்து பேசுறேன் என்ன சொல்லுங்க நீங்கள் டேட் ஆஃப் டேட் போர்ட் கிட்ட என்கொயரி பண்ணிருக்கீங்களா கூவில ஆமா தம்பி என்ன யா அது ரிகார்டிங் நான் கால் பண்ணிருக்கேன் உங்க என்கேம்",
+  "summary": "The agent initiated the call and introduced themselves. The call referenced an inquiry related to IIT Madras.",
+  "sop_validation": {
+    "greeting": true,
+    "identification": true,
+    "problemStatement": false,
+    "solutionOffering": false,
+    "closing": false,
+    "complianceScore": 0.4,
+    "adherenceStatus": "NOT_FOLLOWED"
+  },
+  "analytics": {
+    "paymentPreference": "EMI",
+    "rejectionReason": "NONE"
+  },
+  "sentiment": "NEUTRAL",
+  "sop": {
+    "greeting": true,
+    "identification": true,
+    "problemStatement": false,
+    "solutionOffering": false,
+    "closing": false,
+    "complianceScore": 0.4,
+    "adherenceStatus": "NOT_FOLLOWED"
+  },
+  "paymentClassification": "EMI",
+  "rejectionReason": "NONE",
+  "keywords": [
+    "IIT Madras",
+    "Guvi",
+    "course inquiry",
+    "agent",
+    "call"
+  ],
+  "modelInfo": {
+    "sttProvider": "sarvam",
+    "sttFallbackUsed": "false",
+    "sttConfidence": "0.87",
+    "classificationConfidence": "0.55",
+    "llmPrimary": "openrouter",
+    "llmFallback": "gemini",
+    "llmStructuredValid": "false",
+    "vectorIndexed": "true"
+  }
+}

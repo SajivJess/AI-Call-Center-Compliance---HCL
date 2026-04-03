@@ -1,13 +1,15 @@
+import re
 from threading import Lock
 
 
 class FaissStore:
+    _DIM = 256
+
     def __init__(self) -> None:
         self._lock = Lock()
         self._available = False
         self._index = None
         self._ids: list[str] = []
-        self._model = None
         self._faiss = None
         self._np = None
         self._init_backend()
@@ -20,23 +22,30 @@ class FaissStore:
         try:
             import faiss  # type: ignore
             import numpy as np
-            from sentence_transformers import SentenceTransformer
 
             self._faiss = faiss
             self._np = np
-            self._model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-            self._index = faiss.IndexFlatL2(384)
+            self._index = faiss.IndexFlatL2(self._DIM)
             self._available = True
         except Exception:
             self._available = False
+
+    def _embed(self, text: str):
+        tokens = re.findall(r"[A-Za-z0-9]+", text.lower())
+        vec = self._np.zeros(self._DIM, dtype="float32")
+        for token in tokens:
+            vec[hash(token) % self._DIM] += 1.0
+        norm = float(self._np.linalg.norm(vec))
+        if norm > 0.0:
+            vec /= norm
+        return vec.reshape(1, -1)
 
     def add_transcript(self, call_id: str, transcript: str) -> bool:
         if not self._available or not transcript.strip():
             return False
 
         with self._lock:
-            vector = self._model.encode([transcript], normalize_embeddings=True)
-            vec_np = self._np.asarray(vector, dtype="float32")
+            vec_np = self._embed(transcript)
             self._index.add(vec_np)
             self._ids.append(call_id)
         return True
@@ -46,8 +55,7 @@ class FaissStore:
             return []
 
         with self._lock:
-            query = self._model.encode([text], normalize_embeddings=True)
-            query_np = self._np.asarray(query, dtype="float32")
+            query_np = self._embed(text)
             _, indices = self._index.search(query_np, min(top_k, self._index.ntotal))
 
         out: list[str] = []

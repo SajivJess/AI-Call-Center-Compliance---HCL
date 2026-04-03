@@ -1,0 +1,49 @@
+{
+  "status": "success",
+  "language": "Tamil",
+  "callId": "RERUN7-chunk_001",
+  "transcript": "ஏய் நீ வேற இருக்க எப்படி அண்ணா?\n ம்... \nநான் வீட்ல கண்டினியூ பண்ணிட்டு போல பண்ணி சொல்லணும் சார்.\nஇல்ல என்ன ரீசனுக்காக என்கொயரி சொல்ல இருக்கீங்க ஆக்சுவலி?\nஅதான் சூப்பர் இது வெப் டிசைனிங்க்காக.\nஇல்ல ஏன்னா உங்களுக்கு அது கன்பியூஷனா இருக்கு நீங்க வெப் டிசைனிங் சொல்றீங்க ஆனா வந்துருக்கறது டேட்டா ஸ்கோர்ஸ் என்கொயரி.\n ரொம்ப தெரியாம ரெண்டு இல்ல இல்ல ரெண்டு சைடுமே பாத்துட்டு இருக்கேன் கோடிங் அது இல்லாம இருக்கும்னு சொன்னாங்க.\nஆமா டிசைனிங்.",
+  "summary": "The agent and customer discussed a prior course inquiry, with confusion between web designing and data science options.",
+  "sop_validation": {
+    "greeting": false,
+    "identification": true,
+    "problemStatement": false,
+    "solutionOffering": false,
+    "closing": false,
+    "complianceScore": 0.2,
+    "adherenceStatus": "NOT_FOLLOWED"
+  },
+  "analytics": {
+    "paymentPreference": "EMI",
+    "rejectionReason": "NONE"
+  },
+  "sentiment": "NEUTRAL",
+  "sop": {
+    "greeting": false,
+    "identification": true,
+    "problemStatement": false,
+    "solutionOffering": false,
+    "closing": false,
+    "complianceScore": 0.2,
+    "adherenceStatus": "NOT_FOLLOWED"
+  },
+  "paymentClassification": "EMI",
+  "rejectionReason": "NONE",
+  "keywords": [
+    "course inquiry",
+    "web designing",
+    "data science",
+    "agent",
+    "customer"
+  ],
+  "modelInfo": {
+    "sttProvider": "sarvam",
+    "sttFallbackUsed": "false",
+    "sttConfidence": "0.87",
+    "classificationConfidence": "0.55",
+    "llmPrimary": "openrouter",
+    "llmFallback": "gemini",
+    "llmStructuredValid": "false",
+    "vectorIndexed": "true"
+  }
+}

@@ -200,6 +200,88 @@
 			],
 			"isBackground": false,
 			"group": "build"
+		},
+		{
+			"label": "git-status-short-hcl",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"status",
+				"--short"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git-commit-hcl",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"commit",
+				"-m",
+				"Prepare deployment docs and endpoint tester guidance"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git-status-post-commit-hcl",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"status",
+				"--short"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git-remote-set-hcl",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"git remote remove origin 2>nul & git remote add origin https://github.com/SajivJess/AI-Call-Center-Compliance---HCL.git & git remote -v"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git-push-main-hcl",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"push",
+				"-u",
+				"origin",
+				"main"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "pytest-deploy-optimization",
+			"type": "shell",
+			"command": "f:/Projects/hcl/.venv/Scripts/python.exe",
+			"args": [
+				"-m",
+				"pytest",
+				"tests/test_api_contract.py",
+				"tests/test_audio_and_language.py",
+				"-q"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "rerun-first-two-chunks-now",
+			"type": "shell",
+			"command": "f:/Projects/hcl/.venv/Scripts/python.exe",
+			"args": [
+				"scripts/rerun_first_two_chunks.py"
+			],
+			"isBackground": false,
+			"group": "test"
 		}
 	]
 }
