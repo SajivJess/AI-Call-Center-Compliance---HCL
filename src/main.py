@@ -17,6 +17,11 @@ app.add_exception_handler(RateLimitExceeded, lambda request, exc: JSONResponse(s
 app.add_middleware(SlowAPIMiddleware)
 
 
+@app.get("/")
+def root_health() -> dict[str, str]:
+    return {"status": "ok"}
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "env": settings.app_env}
