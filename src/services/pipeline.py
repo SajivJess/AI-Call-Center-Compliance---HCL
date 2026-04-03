@@ -1,4 +1,5 @@
 import asyncio
+import os
 from uuid import uuid4
 
 from src.schemas.enums import PaymentClassification, RejectionReason, SentimentLabel
@@ -154,16 +155,19 @@ class CallAnalyticsPipeline:
         wav = None
         try:
             source = await asyncio.to_thread(decode_base64_audio, payload.audio_base64, payload.audio_format)
+            print("Decoded audio exists:", source.exists())
+            if source.exists():
+                print("Decoded audio size:", source.stat().st_size)
             wav = await asyncio.to_thread(preprocess_audio, source)
+            print("Post-process audio exists:", wav.exists())
+            if wav.exists():
+                print("Post-process audio size:", wav.stat().st_size)
+            print("OPENROUTER_API_KEY:", bool(os.getenv("OPENROUTER_API_KEY")))
+            print("GEMINI_API_KEY:", bool(os.getenv("GEMINI_API_KEY")))
 
             stt_provider = "sarvam"
             stt_fallback_used = False
-            try:
-                transcript, stt_provider = await asyncio.to_thread(self.stt.transcribe, wav, payload.language_hint)
-            except Exception:
-                transcript = "Audio unclear, unable to transcribe fully"
-                stt_provider = "fallback"
-                stt_fallback_used = True
+            transcript, stt_provider = await asyncio.to_thread(self.stt.transcribe, wav, payload.language_hint)
 
             llm_result = await asyncio.to_thread(self.llm.analyze_transcript, transcript)
             normalized_text = llm_result.normalized_text if llm_result and llm_result.normalized_text.strip() else transcript

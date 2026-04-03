@@ -1,7 +1,8 @@
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    FFMPEG_BINARY=/usr/bin/ffmpeg
 
 # Install system dependency required by audio preprocessing
 RUN apt-get update \

@@ -31,8 +31,15 @@ def decode_base64_audio(audio_base64: str, extension: str = "mp3") -> Path:
 def preprocess_audio(input_path: Path) -> Path:
     settings = get_settings()
     output_path = input_path.with_suffix(".wav")
+    ffmpeg_path = settings.ffmpeg_binary or "/usr/bin/ffmpeg"
+    if ffmpeg_path == "ffmpeg":
+        ffmpeg_path = "/usr/bin/ffmpeg"
+    print("FFmpeg path:", ffmpeg_path)
+    print("Audio input exists:", input_path.exists())
+    if input_path.exists():
+        print("Audio input size:", input_path.stat().st_size)
     command = [
-        settings.ffmpeg_binary,
+        ffmpeg_path,
         "-y",
         "-i",
         str(input_path),
@@ -49,6 +56,9 @@ def preprocess_audio(input_path: Path) -> Path:
     except subprocess.CalledProcessError as exc:
         stderr = exc.stderr.decode("utf-8", errors="ignore")
         raise HTTPException(status_code=422, detail=f"Audio preprocessing failed: {stderr[:200]}") from exc
+    print("Audio output exists:", output_path.exists())
+    if output_path.exists():
+        print("Audio output size:", output_path.stat().st_size)
     return output_path
 
 

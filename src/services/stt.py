@@ -35,6 +35,8 @@ class STTService:
 
     def transcribe(self, wav_path: Path, language_hint: str | None = None) -> tuple[str, str]:
         errors: list[str] = []
+        print("Sarvam key:", bool(self.settings.sarvam_api_key))
+        print("Whisper key:", bool(self.settings.whisper_api_key))
 
         if self.settings.sarvam_api_key:
             try:
@@ -57,26 +59,31 @@ class STTService:
         headers = {"Authorization": f"Bearer {self.settings.sarvam_api_key}"}
         files = {"file": (wav_path.name, wav_path.read_bytes(), "audio/wav")}
         data = {"language": self._normalize_language_hint(language_hint) or "auto"}
+        print("Sending audio to Sarvam...")
         with httpx.Client(timeout=60.0) as client:
             response = client.post(f"{self.settings.sarvam_base_url}/speech-to-text", headers=headers, files=files, data=data)
+            print("Sarvam status:", response.status_code)
+            print("Sarvam response:", response.text)
             response.raise_for_status()
             payload = response.json()
         text = payload.get("transcript") or payload.get("text")
         if not text:
-            raise ValueError("Empty transcript from Sarvam")
+            raise ValueError("STT returned empty — investigate Sarvam response")
         return self._normalize_transcript_text(text)
 
     def _whisper_transcribe(self, wav_path: Path, language_hint: str | None) -> str:
         client = OpenAI(api_key=self.settings.whisper_api_key)
+        print("Sending audio to Whisper...")
         with wav_path.open("rb") as audio_file:
             result = client.audio.transcriptions.create(
                 model=self.settings.whisper_model,
                 file=audio_file,
                 language=self._normalize_language_hint(language_hint),
             )
+        print("Whisper response:", getattr(result, "text", ""))
         text = getattr(result, "text", "")
         if not text:
-            raise ValueError("Empty transcript from Whisper")
+            raise ValueError("STT returned empty — investigate Whisper response")
         return self._normalize_transcript_text(text)
 
     def _mock_transcribe(self) -> str:

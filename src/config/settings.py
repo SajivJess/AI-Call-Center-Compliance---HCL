@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     rate_limit_per_minute: int = 30
     request_timeout_seconds: int = 90
 
-    ffmpeg_binary: str = "ffmpeg"
+    ffmpeg_binary: str = "/usr/bin/ffmpeg"
     temp_dir: str = "./tmp"
 
     sarvam_api_key: str | None = None
