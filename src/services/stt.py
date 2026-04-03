@@ -1,8 +1,8 @@
 from pathlib import Path
 
-import httpx
 from fastapi import HTTPException
 from openai import OpenAI
+from sarvamai import SarvamAI
 
 from src.config.settings import get_settings
 
@@ -56,17 +56,16 @@ class STTService:
         raise HTTPException(status_code=502, detail=f"No STT provider available. {' | '.join(errors)}")
 
     def _sarvam_transcribe(self, wav_path: Path, language_hint: str | None) -> str:
-        headers = {"Authorization": f"Bearer {self.settings.sarvam_api_key}"}
-        files = {"file": (wav_path.name, wav_path.read_bytes(), "audio/wav")}
-        data = {"language": self._normalize_language_hint(language_hint) or "auto"}
         print("Sending audio to Sarvam...")
-        with httpx.Client(timeout=60.0) as client:
-            response = client.post(f"{self.settings.sarvam_base_url}/speech-to-text", headers=headers, files=files, data=data)
-            print("Sarvam status:", response.status_code)
-            print("Sarvam response:", response.text)
-            response.raise_for_status()
-            payload = response.json()
-        text = payload.get("transcript") or payload.get("text")
+        client = SarvamAI(api_subscription_key=self.settings.sarvam_api_key)
+        with wav_path.open("rb") as audio_file:
+            response = client.speech_to_text.transcribe(
+                file=audio_file,
+                model="saaras:v3",
+                mode="transcribe",
+            )
+        print("Sarvam response:", response)
+        text = getattr(response, "transcript", None) or (response.get("transcript") if isinstance(response, dict) else None)
         if not text:
             raise ValueError("STT returned empty — investigate Sarvam response")
         return self._normalize_transcript_text(text)
