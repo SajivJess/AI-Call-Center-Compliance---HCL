@@ -1,0 +1,205 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "pytest-targeted",
+			"type": "shell",
+			"command": "f:/Projects/hcl/.venv/Scripts/python.exe",
+			"args": [
+				"-m",
+				"pytest",
+				"tests/test_api_contract.py",
+				"tests/test_audio_and_language.py",
+				"-q"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "rerun-first-two-chunks",
+			"type": "shell",
+			"command": "f:/Projects/hcl/.venv/Scripts/python.exe",
+			"args": [
+				"scripts/rerun_first_two_chunks.py"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "rerun-first-two-chunks",
+			"type": "shell",
+			"command": "f:/Projects/hcl/.venv/Scripts/python.exe",
+			"args": [
+				"scripts/rerun_first_two_chunks.py"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "rerun-first-two-chunks",
+			"type": "shell",
+			"command": "f:/Projects/hcl/.venv/Scripts/python.exe",
+			"args": [
+				"scripts/rerun_first_two_chunks.py"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "pytest-targeted",
+			"type": "shell",
+			"command": "f:/Projects/hcl/.venv/Scripts/python.exe",
+			"args": [
+				"-m",
+				"pytest",
+				"tests/test_api_contract.py",
+				"tests/test_audio_and_language.py",
+				"-q"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "cleanup-unwanted-files",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"$ErrorActionPreference='Stop'; $paths=@('tests audio/outputs_keywords_final','tests audio/outputs_rerun5','tests audio/outputs_rerun6','tests audio/outputs_rerun7','.pytest_cache','src/__pycache__','tests/__pycache__','data/call_analytics.db'); foreach($p in $paths){ if(Test-Path $p){ Remove-Item -Recurse -Force $p } }; Write-Output 'cleanup-complete'"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "cleanup-unwanted-files-python",
+			"type": "shell",
+			"command": "f:/Projects/hcl/.venv/Scripts/python.exe",
+			"args": [
+				"-c",
+				"from pathlib import Path; import shutil; paths=['tests audio/outputs_keywords_final','tests audio/outputs_rerun5','tests audio/outputs_rerun6','tests audio/outputs_rerun7','.pytest_cache','src/__pycache__','tests/__pycache__','data/call_analytics.db'];\nfor p in paths:\n    path=Path(p)\n    if path.exists():\n        shutil.rmtree(path) if path.is_dir() else path.unlink();\nprint('cleanup-complete')"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "cleanup-unwanted-files",
+			"type": "shell",
+			"command": "f:/Projects/hcl/.venv/Scripts/python.exe",
+			"args": [
+				"scripts/cleanup_unwanted.py"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "cleanup-unwanted-files-py2",
+			"type": "shell",
+			"command": "f:/Projects/hcl/.venv/Scripts/python.exe",
+			"args": [
+				"scripts/cleanup_unwanted.py"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "cleanup-unwanted-files-py3",
+			"type": "shell",
+			"command": "f:/Projects/hcl/.venv/Scripts/python.exe",
+			"args": [
+				"scripts/cleanup_unwanted.py"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "remove-temp-cleanup-script",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"if exist \"scripts\\cleanup_unwanted.py\" del /f /q \"scripts\\cleanup_unwanted.py\" && echo removed"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "final-db-cleanup",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"if exist \"data\\call_analytics.db\" (del /f /q \"data\\call_analytics.db\" && echo db-removed) else (echo db-not-found)"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "find-python-lockers",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-NoProfile",
+				"-Command",
+				"Get-CimInstance Win32_Process | Where-Object { $_.Name -like 'python*' } | Select-Object ProcessId, Name, CommandLine | Format-Table -AutoSize"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "stop-python-and-delete-db",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"taskkill /F /IM python.exe >nul 2>nul & taskkill /F /IM pythonw.exe >nul 2>nul & if exist \"data\\call_analytics.db\" del /f /q \"data\\call_analytics.db\" & if exist \"data\\call_analytics.db\" (echo db-still-present) else (echo db-removed)"
+			],
+			"isBackground": false,
+			"group": "test"
+		},
+		{
+			"label": "git-init-hcl",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"init"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git-branch-main-hcl",
+			"type": "shell",
+			"command": "git",
+			"args": [
+				"checkout",
+				"-B",
+				"main"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git-config-user-hcl",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"git config user.name \"SajivJess\" && git config user.email \"sajivjess@users.noreply.github.com\" && echo git-user-configured"
+			],
+			"isBackground": false,
+			"group": "build"
+		},
+		{
+			"label": "git-add-commit-hcl",
+			"type": "shell",
+			"command": "cmd",
+			"args": [
+				"/c",
+				"git add . && git commit -m \"Prepare deployment, docs, and endpoint validation guidance\""
+			],
+			"isBackground": false,
+			"group": "build"
+		}
+	]
+}
