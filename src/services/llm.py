@@ -20,6 +20,18 @@ class LLMService:
     def __init__(self) -> None:
         self.settings = get_settings()
 
+    def _fallback_structured_output(self, prompt: str) -> str:
+        transcript = prompt.split("Transcript:\n", maxsplit=1)[-1].strip() if "Transcript:\n" in prompt else ""
+        return json.dumps(
+            {
+                "normalized_text": transcript,
+                "summary": "",
+                "sentiment": "NEUTRAL",
+                "payment_classification": None,
+                "rejection_reason": None,
+            }
+        )
+
     def analyze_transcript(self, transcript: str) -> LLMNormalizedOutput | None:
         prompt = self._build_structured_prompt(transcript)
         output = self._call_with_fallback(prompt)
@@ -94,7 +106,7 @@ class LLMService:
                 }
             )
 
-        raise RuntimeError("No LLM provider available")
+        return self._fallback_structured_output(prompt)
 
     def _openrouter_call(self, prompt: str) -> str:
         headers = {
