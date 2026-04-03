@@ -7,7 +7,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     app_name: str = "AI Call Center Compliance API"
     app_env: str = "dev"
-    api_key: str = Field(default="change-me", alias="API_KEY")
+    api_key: str = Field(default="sajivjess-hcl", alias="API_KEY")
 
     rate_limit_per_minute: int = 30
     request_timeout_seconds: int = 90
