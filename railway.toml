@@ -1,5 +1,3 @@
-[build]
-builder = "NIXPACKS"
-
-[phases.setup]
-nixpkgs = ["ffmpeg"]
+[deploy]
+startCommand = "python -m src.start"
+healthcheckPath = "/"
