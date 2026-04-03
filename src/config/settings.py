@@ -30,8 +30,8 @@ class Settings(BaseSettings):
 
     sqlite_path: str = "./data/call_analytics.db"
 
-    allow_mock_stt: bool = True
-    allow_mock_llm: bool = True
+    allow_mock_stt: bool = False
+    allow_mock_llm: bool = False
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
