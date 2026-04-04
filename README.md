@@ -147,6 +147,7 @@ Deployment checklist:
 
 ## AI Tools Used
 
+- OpenAI ChatGPT for implementation support, debugging, testing, and documentation assistance
 - GitHub Copilot (GPT-5.4 mini) for implementation support, refactoring, testing, and documentation assistance
 
 ## Known Limitations
