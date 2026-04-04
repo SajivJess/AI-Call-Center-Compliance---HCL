@@ -11,7 +11,7 @@ class Settings(BaseSettings):
 
     rate_limit_per_minute: int = 30
     request_timeout_seconds: int = 90
-    max_sync_chunks: int = Field(default=8, alias="MAX_SYNC_CHUNKS")
+    max_sync_chunks: int = Field(default=20, alias="MAX_SYNC_CHUNKS")
     max_chunk_concurrency: int = Field(default=8, alias="MAX_CHUNK_CONCURRENCY")
 
     ffmpeg_binary: str = "/usr/bin/ffmpeg"

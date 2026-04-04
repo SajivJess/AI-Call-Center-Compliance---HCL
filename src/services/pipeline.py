@@ -174,7 +174,8 @@ class CallAnalyticsPipeline:
             print("Processing chunk count:", len(chunk_paths))
 
             total_chunks = len(chunk_paths)
-            max_sync_chunks = max(1, self.settings.max_sync_chunks)
+            configured_chunk_cap = self.settings.max_sync_chunks
+            max_sync_chunks = total_chunks if configured_chunk_cap <= 0 else max(1, configured_chunk_cap)
             selected_chunk_paths = chunk_paths[:max_sync_chunks]
             partial_processing = total_chunks > len(selected_chunk_paths)
             if partial_processing:
