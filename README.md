@@ -133,6 +133,15 @@ Deployment checklist:
 6. If tester timeout persists on long calls, keep `LLM_SKIP_CHUNK_THRESHOLD` at `10` (or lower) to use a fast local summary/classification path for large chunk counts.
 7. Keep the live URL public and available for 48 hours after submission.
 
+## Latency Mode Disclosure
+
+For strict endpoint tester time limits, the pipeline can enable a fast path on larger calls (`fastLargeCallMode=true` in `modelInfo`).
+
+- What remains full-quality: STT transcription still runs on Sarvam for all selected chunks.
+- What changes in fast mode: summary, sentiment, and keyword extraction use deterministic local logic instead of external LLM calls.
+- Why this exists: prevents request timeouts under judge/tester limits and guarantees a valid, contract-compliant response.
+- How to disable for best narrative quality: set `LLM_SKIP_CHUNK_THRESHOLD` to a very high value (example: `999`).
+
 ## Submission Checklist
 
 - Live deployed URL: [add link here]
@@ -158,6 +167,7 @@ Deployment checklist:
 - Provider latency can increase response time.
 - Accuracy depends on audio quality and language mixing.
 - Long calls require chunking and multiple STT requests.
+- Fast mode prioritizes response-time reliability over LLM-level summary richness on very long calls.
 - SQLite is used for lightweight persistence, not as a horizontal-scale database.
 
 ## Tests
