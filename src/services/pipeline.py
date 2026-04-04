@@ -171,10 +171,14 @@ class CallAnalyticsPipeline:
             chunk_dir = chunk_paths[0].parent if chunk_paths else None
             print("Processing chunk count:", len(chunk_paths))
 
+            max_chunk_concurrency = min(4, len(chunk_paths)) if chunk_paths else 1
+            chunk_semaphore = asyncio.Semaphore(max_chunk_concurrency)
+
             async def transcribe_chunk(index: int, chunk_path):
-                print(f"Transcribing chunk {index + 1}/{len(chunk_paths)}:", chunk_path.name)
-                chunk_transcript, chunk_provider = await asyncio.to_thread(self.stt.transcribe, chunk_path, payload.language_hint)
-                return index, chunk_transcript.strip(), chunk_provider
+                async with chunk_semaphore:
+                    print(f"Transcribing chunk {index + 1}/{len(chunk_paths)}:", chunk_path.name)
+                    chunk_transcript, chunk_provider = await asyncio.to_thread(self.stt.transcribe, chunk_path, payload.language_hint)
+                    return index, chunk_transcript.strip(), chunk_provider
 
             chunk_results = await asyncio.gather(
                 *(transcribe_chunk(index, chunk_path) for index, chunk_path in enumerate(chunk_paths))
