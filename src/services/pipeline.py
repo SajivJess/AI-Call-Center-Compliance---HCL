@@ -171,14 +171,21 @@ class CallAnalyticsPipeline:
             chunk_dir = chunk_paths[0].parent if chunk_paths else None
             print("Processing chunk count:", len(chunk_paths))
 
-            chunk_transcripts: list[str] = []
-            chunk_providers: list[str] = []
-            stt_fallback_used = False
-            for index, chunk_path in enumerate(chunk_paths, start=1):
-                print(f"Transcribing chunk {index}/{len(chunk_paths)}:", chunk_path.name)
+            async def transcribe_chunk(index: int, chunk_path):
+                print(f"Transcribing chunk {index + 1}/{len(chunk_paths)}:", chunk_path.name)
                 chunk_transcript, chunk_provider = await asyncio.to_thread(self.stt.transcribe, chunk_path, payload.language_hint)
-                chunk_transcripts.append(chunk_transcript.strip())
-                chunk_providers.append(chunk_provider)
+                return index, chunk_transcript.strip(), chunk_provider
+
+            chunk_results = await asyncio.gather(
+                *(transcribe_chunk(index, chunk_path) for index, chunk_path in enumerate(chunk_paths))
+            )
+
+            chunk_transcripts: list[str] = ["" for _ in chunk_paths]
+            chunk_providers: list[str] = ["" for _ in chunk_paths]
+            stt_fallback_used = False
+            for index, chunk_transcript, chunk_provider in chunk_results:
+                chunk_transcripts[index] = chunk_transcript
+                chunk_providers[index] = chunk_provider
                 if chunk_provider != "sarvam":
                     stt_fallback_used = True
 
