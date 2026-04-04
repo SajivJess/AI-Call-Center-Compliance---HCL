@@ -171,7 +171,7 @@ class CallAnalyticsPipeline:
             chunk_dir = chunk_paths[0].parent if chunk_paths else None
             print("Processing chunk count:", len(chunk_paths))
 
-            max_chunk_concurrency = min(4, len(chunk_paths)) if chunk_paths else 1
+            max_chunk_concurrency = min(8, len(chunk_paths)) if chunk_paths else 1
             chunk_semaphore = asyncio.Semaphore(max_chunk_concurrency)
 
             async def transcribe_chunk(index: int, chunk_path):
