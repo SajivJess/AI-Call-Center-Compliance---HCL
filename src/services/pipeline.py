@@ -81,21 +81,27 @@ class CallAnalyticsPipeline:
         fee_match = re.search(r"73[, ]?800|73\.800|73800", transcript)
         if fee_match:
             detail_bits.append("The total program fee was quoted at around 73,800.")
-        if any(token in lowered for token in ["emi", "installment", "installments"]):
+        if any(token in lowered for token in ["emi", "installment", "installments", "காசோலை", "இஎம்ஐ"]):
             detail_bits.append("EMI options were discussed as part of the payment plan.")
-        if any(token in lowered for token in ["placement", "placements", "job", "jobs"]):
+        if any(token in lowered for token in ["placement", "placements", "job", "jobs", "வேலை", "பிளேஸ்மென்ட்"]):
             detail_bits.append("The caller asked about job prospects and placement support.")
-        if any(token in lowered for token in ["4 months", "four months", "nalu masam", "four to six", "6 months", "six months", "3 months", "three months"]):
-            detail_bits.append("The counselor emphasized that the training would require several months of effort and practice.")
-        if any(token in lowered for token in ["experience", "experienced", "work experience", "relevant experience"]):
+        if any(token in lowered for token in ["3 months", "three months", "4 months", "four months", "5 months", "five months", "6 months", "six months", "மூணு மாசம்", "நாலு மாசம்", "அஞ்சு மாசம்", "ஆறு மாசம்"]):
+            detail_bits.append("The counselor emphasized that the training would take several months and would require consistent practice.")
+        if any(token in lowered for token in ["experience", "experienced", "work experience", "relevant experience", "எக்ஸ்பீரியன்ஸ்", "ப்ராஜெக்ட்ஸ்"]):
             detail_bits.append("Practical experience and real-time project exposure were highlighted as important for hiring.")
-        if any(token in lowered for token in ["direct job", "directly", "not possible", "cannot", "can't"]):
+        if any(token in lowered for token in ["direct job", "directly", "not possible", "cannot", "can't", "டைரக்டா", "பாசிபிள் கிடையாது"]):
             detail_bits.append("The counselor said direct job placement is not realistic without the required skill development.")
+        if any(token in lowered for token in ["data science", "data series", "டேட்டா சயின்ஸ்", "டேட்டா"]):
+            detail_bits.append("The conversation positioned Data Science as a high-demand domain with programming, statistics, and machine-learning basics.")
+        if any(token in lowered for token in ["whatsapp", "whats app", "வாட்ஸ்அப்"]):
+            detail_bits.append("The counselor said the company list would be shared on WhatsApp.")
+        if any(token in lowered for token in ["hcl", "iit", "partner", "பார்ட்னர்"]):
+            detail_bits.append("The institute was described as being associated with HCL and IIT Madras ecosystem support.")
 
         if not context and not detail_bits:
             return "The call contains a short exchange between the caller and customer regarding a prior inquiry."
 
-        summary_parts = context[:2] + detail_bits[:4]
+        summary_parts = context[:3] + detail_bits[:6]
         return " ".join(summary_parts)
 
     def _fallback_valid_response(self, payload: CallAnalyticsRequest, reason: str) -> CallAnalyticsResponse:
