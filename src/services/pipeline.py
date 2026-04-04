@@ -11,7 +11,7 @@ from src.services.nlp import NLPService
 from src.services.sop import SOPService
 from src.services.stt import STTService
 from src.storage.faiss_store import FaissStore
-from src.utils.audio import cleanup_files, decode_base64_audio, preprocess_audio
+from src.utils.audio import cleanup_files, decode_base64_audio, preprocess_audio, split_audio_into_chunks
 
 
 class CallAnalyticsPipeline:
@@ -153,6 +153,8 @@ class CallAnalyticsPipeline:
     async def run_async(self, payload: CallAnalyticsRequest) -> CallAnalyticsResponse:
         source = None
         wav = None
+        chunk_dir = None
+        chunk_paths: list = []
         try:
             source = await asyncio.to_thread(decode_base64_audio, payload.audio_base64, payload.audio_format)
             print("Decoded audio exists:", source.exists())
@@ -165,9 +167,31 @@ class CallAnalyticsPipeline:
             print("OPENROUTER_API_KEY:", bool(os.getenv("OPENROUTER_API_KEY")))
             print("GEMINI_API_KEY:", bool(os.getenv("GEMINI_API_KEY")))
 
-            stt_provider = "sarvam"
+            chunk_paths = await asyncio.to_thread(split_audio_into_chunks, wav)
+            chunk_dir = chunk_paths[0].parent if chunk_paths else None
+            print("Processing chunk count:", len(chunk_paths))
+
+            chunk_transcripts: list[str] = []
+            chunk_providers: list[str] = []
             stt_fallback_used = False
-            transcript, stt_provider = await asyncio.to_thread(self.stt.transcribe, wav, payload.language_hint)
+            for index, chunk_path in enumerate(chunk_paths, start=1):
+                print(f"Transcribing chunk {index}/{len(chunk_paths)}:", chunk_path.name)
+                chunk_transcript, chunk_provider = await asyncio.to_thread(self.stt.transcribe, chunk_path, payload.language_hint)
+                chunk_transcripts.append(chunk_transcript.strip())
+                chunk_providers.append(chunk_provider)
+                if chunk_provider != "sarvam":
+                    stt_fallback_used = True
+
+            transcript = " ".join(text for text in chunk_transcripts if text).strip()
+            if not transcript:
+                raise ValueError("Combined transcript is empty")
+
+            if chunk_providers and len(set(chunk_providers)) == 1:
+                stt_provider = chunk_providers[0]
+            elif chunk_providers:
+                stt_provider = "mixed"
+            else:
+                stt_provider = "sarvam"
 
             llm_result = await asyncio.to_thread(self.llm.analyze_transcript, transcript)
             normalized_text = llm_result.normalized_text if llm_result and llm_result.normalized_text.strip() else transcript
@@ -225,10 +249,14 @@ class CallAnalyticsPipeline:
                     "llmFallback": "gemini",
                     "llmStructuredValid": str(llm_result is not None).lower(),
                     "vectorIndexed": str(vector_indexed).lower(),
+                    "chunkingUsed": "true" if len(chunk_paths) > 1 else "false",
+                    "chunkCount": str(len(chunk_paths)),
                 },
             )
             return self._validate_response_contract(response)
         except Exception as exc:
             return self._validate_response_contract(self._fallback_valid_response(payload, str(exc)))
         finally:
-            await asyncio.to_thread(cleanup_files, *(p for p in [source, wav] if p is not None))
+            cleanup_targets = [p for p in [source, wav, chunk_dir] if p is not None]
+            cleanup_targets.extend(chunk_paths)
+            await asyncio.to_thread(cleanup_files, *cleanup_targets)
