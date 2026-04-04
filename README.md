@@ -130,7 +130,8 @@ Deployment checklist:
 3. Set `ALLOW_MOCK_STT=false` and `ALLOW_MOCK_LLM=false`.
 4. For full-chunk judging, set `MAX_SYNC_CHUNKS` to at least the expected chunk count (example: `20`). Set `MAX_SYNC_CHUNKS=0` to disable capping.
 5. `MAX_CHUNK_CONCURRENCY=0` enables adaptive parallelism (recommended). Set a positive value only if you want a fixed worker count.
-6. Keep the live URL public and available for 48 hours after submission.
+6. If tester timeout persists on long calls, keep `LLM_SKIP_CHUNK_THRESHOLD` at `10` (or lower) to use a fast local summary/classification path for large chunk counts.
+7. Keep the live URL public and available for 48 hours after submission.
 
 ## Submission Checklist
 

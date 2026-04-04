@@ -13,6 +13,8 @@ class Settings(BaseSettings):
     request_timeout_seconds: int = 90
     max_sync_chunks: int = Field(default=20, alias="MAX_SYNC_CHUNKS")
     max_chunk_concurrency: int = Field(default=0, alias="MAX_CHUNK_CONCURRENCY")
+    llm_skip_chunk_threshold: int = Field(default=10, alias="LLM_SKIP_CHUNK_THRESHOLD")
+    disable_vector_index_for_large_calls: bool = Field(default=True, alias="DISABLE_VECTOR_INDEX_FOR_LARGE_CALLS")
 
     ffmpeg_binary: str = "/usr/bin/ffmpeg"
     temp_dir: str = "./tmp"

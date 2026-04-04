@@ -101,12 +101,12 @@ class STTService:
                 model="saaras:v3",
                 mode="transcribe",
             )
-        print("Sarvam raw response:", repr(response))
         parsed = self._response_to_dict(response)
-        print("Sarvam parsed response:", parsed)
         text = self._extract_transcript(parsed) or self._extract_transcript(response)
         if not text:
             raise ValueError("STT returned empty — investigate Sarvam response")
+        request_id = parsed.get("request_id") if isinstance(parsed, dict) else None
+        print("Sarvam transcript received:", {"request_id": request_id, "chars": len(text)})
         return self._normalize_transcript_text(text)
 
     def _whisper_transcribe(self, wav_path: Path, language_hint: str | None) -> str:

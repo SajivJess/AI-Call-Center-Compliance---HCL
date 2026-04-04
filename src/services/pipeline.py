@@ -239,7 +239,8 @@ class CallAnalyticsPipeline:
             else:
                 stt_provider = "sarvam"
 
-            llm_result = await asyncio.to_thread(self.llm.analyze_transcript, transcript)
+            use_fast_large_call_mode = selected_count >= self.settings.llm_skip_chunk_threshold
+            llm_result = None if use_fast_large_call_mode else await asyncio.to_thread(self.llm.analyze_transcript, transcript)
             normalized_text = llm_result.normalized_text if llm_result and llm_result.normalized_text.strip() else transcript
             llm_summary = llm_result.summary.strip() if llm_result and llm_result.summary else ""
             summary = llm_summary if not self._is_placeholder_summary(llm_summary) else self._fallback_summary(normalized_text)
@@ -272,7 +273,9 @@ class CallAnalyticsPipeline:
             class_confidence = self.analytics.classification_confidence(normalized_text, payment, rejection)
 
             call_id = payload.call_id or f"CALL-{uuid4().hex[:12].upper()}"
-            vector_indexed = await asyncio.to_thread(self.vector_store.add_transcript, call_id, normalized_text)
+            vector_indexed = False
+            if not (use_fast_large_call_mode and self.settings.disable_vector_index_for_large_calls):
+                vector_indexed = await asyncio.to_thread(self.vector_store.add_transcript, call_id, normalized_text)
             response = CallAnalyticsResponse(
                 status="success",
                 language=self._canonical_language(normalized_text, payload.language_hint),
@@ -300,6 +303,7 @@ class CallAnalyticsPipeline:
                     "totalChunkCount": str(total_chunks),
                     "partialTranscription": str(partial_processing).lower(),
                     "chunkConcurrency": str(max_chunk_concurrency),
+                    "fastLargeCallMode": str(use_fast_large_call_mode).lower(),
                 },
             )
             return self._validate_response_contract(response)
