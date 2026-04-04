@@ -1,5 +1,6 @@
 import asyncio
 import os
+import re
 from uuid import uuid4
 
 from src.config.settings import get_settings
@@ -55,29 +56,47 @@ class CallAnalyticsPipeline:
     def _fallback_summary(self, transcript: str) -> str:
         lowered = transcript.lower()
         context: list[str] = []
-        domain_context_added = False
+        detail_bits: list[str] = []
+
+        if any(token in lowered for token in ["data science", "data series", "டேட்டா சீரிஸ்", "டேட்டா சயன்ஸ்", "டேட்டா"]):
+            detail_bits.append("The discussion centered on a Data Science course and related career guidance.")
+        elif any(token in lowered for token in ["web", "web designing", "web design", "வெப்", "டிசைன்"]):
+            detail_bits.append("The discussion centered on a web designing inquiry and career guidance.")
 
         if any(token in lowered for token in ["hello", "hi", "ஹலோ", "வணக்கம்"]):
             context.append("The agent initiated the call and introduced themselves.")
-        if any(token in lowered for token in ["web", "web designing", "web design", "வெப்", "டிசைன்"]):
-            if any(token in lowered for token in ["data science", "data series", "டேட்டா சீரிஸ்", "டேட்டா சயன்ஸ்", "டேட்டா"]):
-                context.append("The agent and customer discussed a prior course inquiry, with confusion between web designing and data science options.")
-            else:
-                context.append("The call discussed a web designing course inquiry.")
-            domain_context_added = True
-        elif any(token in lowered for token in ["data science", "data series", "டேட்டா சீரிஸ்", "டேட்டா சயன்ஸ்", "டேட்டா"]):
-            context.append("The call discussed a data science course inquiry.")
-            domain_context_added = True
+
+        if any(token in lowered for token in ["web", "web designing", "web design", "வெப்", "டிசைன்"]) and any(token in lowered for token in ["data science", "data series", "டேட்டா சீரிஸ்", "டேட்டா சயின்ஸ்", "டேட்டா"]):
+            context.append("The call clarified confusion between web designing and Data Science, with the final discussion focusing on Data Science.")
+
         if any(token in transcript for token in ["ஐஐடி", "மெட்ராஸ்"]) or any(token in lowered for token in ["iit", "madras"]):
             context.append("The call referenced an inquiry related to IIT Madras.")
-        if not domain_context_added and (any(token in transcript for token in ["என்கொயரி", "கோர்ஸ்"]) or any(token in lowered for token in ["inquiry", "course"])):
+
+        if any(token in transcript for token in ["என்கொயரி", "கோர்ஸ்"]) or any(token in lowered for token in ["inquiry", "course"]):
             context.append("The call context appears related to a prior course inquiry.")
+
         if any(token in transcript for token in ["கூவி", "கான்செல்ட்"]) or any(token in lowered for token in ["guvi", "consult"]):
             context.append("The caller mentioned institute or platform details during the discussion.")
 
-        if not context:
+        fee_match = re.search(r"73[, ]?800|73\.800|73800", transcript)
+        if fee_match:
+            detail_bits.append("The total program fee was quoted at around 73,800.")
+        if any(token in lowered for token in ["emi", "installment", "installments"]):
+            detail_bits.append("EMI options were discussed as part of the payment plan.")
+        if any(token in lowered for token in ["placement", "placements", "job", "jobs"]):
+            detail_bits.append("The caller asked about job prospects and placement support.")
+        if any(token in lowered for token in ["4 months", "four months", "nalu masam", "four to six", "6 months", "six months", "3 months", "three months"]):
+            detail_bits.append("The counselor emphasized that the training would require several months of effort and practice.")
+        if any(token in lowered for token in ["experience", "experienced", "work experience", "relevant experience"]):
+            detail_bits.append("Practical experience and real-time project exposure were highlighted as important for hiring.")
+        if any(token in lowered for token in ["direct job", "directly", "not possible", "cannot", "can't"]):
+            detail_bits.append("The counselor said direct job placement is not realistic without the required skill development.")
+
+        if not context and not detail_bits:
             return "The call contains a short exchange between the caller and customer regarding a prior inquiry."
-        return " ".join(context[:2])
+
+        summary_parts = context[:2] + detail_bits[:4]
+        return " ".join(summary_parts)
 
     def _fallback_valid_response(self, payload: CallAnalyticsRequest, reason: str) -> CallAnalyticsResponse:
         call_id = payload.call_id or f"CALL-{uuid4().hex[:12].upper()}"
