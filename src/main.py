@@ -1,4 +1,7 @@
+from pathlib import Path
+
 from fastapi import FastAPI, Request
+from fastapi.responses import FileResponse
 from fastapi.responses import JSONResponse
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
@@ -16,6 +19,9 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, lambda request, exc: JSONResponse(status_code=429, content={"detail": "Rate limit exceeded"}))
 app.add_middleware(SlowAPIMiddleware)
 
+BASE_DIR = Path(__file__).resolve().parent
+DEMO_HTML = BASE_DIR / "static" / "demo.html"
+
 
 @app.get("/")
 def root_health() -> dict[str, str]:
@@ -25,6 +31,11 @@ def root_health() -> dict[str, str]:
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "env": settings.app_env}
+
+
+@app.get("/demo")
+def live_demo() -> FileResponse:
+    return FileResponse(DEMO_HTML)
 
 
 @app.middleware("http")

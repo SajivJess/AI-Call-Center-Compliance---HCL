@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Call Analytics Live Demo</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      :root {
+        --bg: #f4f6fb;
+        --panel: #ffffff;
+        --text: #12203a;
+        --muted: #57627a;
+        --accent: #0057d9;
+        --ok: #0f8f58;
+        --err: #c92a2a;
+        --border: #dde3ee;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: radial-gradient(circle at 15% 0%, #e8efff 0%, var(--bg) 45%);
+        color: var(--text);
+      }
+      .wrap {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 24px 16px 36px;
+      }
+      .hero {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 18px;
+        margin-bottom: 14px;
+      }
+      h1 { margin: 0 0 8px; font-size: 1.55rem; }
+      p { margin: 0; color: var(--muted); }
+      .grid {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: 1fr;
+      }
+      @media (min-width: 860px) {
+        .grid { grid-template-columns: 1.1fr 1fr; }
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px;
+      }
+      .field { margin-bottom: 10px; }
+      label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 0.9rem;
+        color: var(--muted);
+      }
+      input, select {
+        width: 100%;
+        padding: 10px 11px;
+        border-radius: 9px;
+        border: 1px solid var(--border);
+        font-size: 0.95rem;
+      }
+      button {
+        border: 0;
+        border-radius: 10px;
+        background: var(--accent);
+        color: white;
+        padding: 10px 14px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button[disabled] { opacity: 0.7; cursor: not-allowed; }
+      .row {
+        display: grid;
+        gap: 10px;
+        grid-template-columns: 1fr 1fr;
+      }
+      .status {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 10px;
+        font-size: 0.92rem;
+        border: 1px solid var(--border);
+      }
+      .status.ok {
+        border-color: #b5ebd0;
+        background: #edfff6;
+        color: var(--ok);
+      }
+      .status.err {
+        border-color: #f5b8b8;
+        background: #fff1f1;
+        color: var(--err);
+      }
+      .badge {
+        display: inline-block;
+        margin-left: 8px;
+        color: var(--muted);
+      }
+      pre {
+        margin: 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+        background: #0f1728;
+        color: #f7faff;
+        border-radius: 10px;
+        padding: 12px;
+        min-height: 180px;
+        font-size: 0.82rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useMemo, useState } = React;
+
+      function toBase64(file) {
+        return new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            const result = String(reader.result || "");
+            const base64 = result.includes(",") ? result.split(",")[1] : result;
+            resolve(base64);
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+      }
+
+      function App() {
+        const defaultUrl = useMemo(() => `${window.location.origin}/api/call-analytics`, []);
+        const [apiUrl, setApiUrl] = useState(defaultUrl);
+        const [apiKey, setApiKey] = useState("sajivjess-hcl");
+        const [audioFile, setAudioFile] = useState(null);
+        const [languageHint, setLanguageHint] = useState("ta-en");
+        const [callId, setCallId] = useState("");
+        const [loading, setLoading] = useState(false);
+        const [status, setStatus] = useState("Ready");
+        const [elapsed, setElapsed] = useState(0);
+        const [error, setError] = useState("");
+        const [result, setResult] = useState(null);
+
+        async function submit() {
+          if (!audioFile) {
+            setError("Please select an MP3 audio file.");
+            return;
+          }
+          setError("");
+          setResult(null);
+          setLoading(true);
+          setElapsed(0);
+          setStatus("Encoding audio...");
+
+          const start = Date.now();
+          const timer = setInterval(() => {
+            setElapsed(Math.floor((Date.now() - start) / 1000));
+          }, 300);
+
+          try {
+            const audioBase64 = await toBase64(audioFile);
+            setStatus("Uploading and processing chunks...");
+
+            const payload = {
+              audio_base64: audioBase64,
+              audio_format: "mp3",
+              language_hint: languageHint,
+            };
+            if (callId.trim()) payload.call_id = callId.trim();
+
+            const res = await fetch(apiUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+                "x-api-key": apiKey,
+              },
+              body: JSON.stringify(payload),
+            });
+
+            const data = await res.json();
+            if (!res.ok) {
+              throw new Error(typeof data?.detail === "string" ? data.detail : JSON.stringify(data));
+            }
+
+            setResult(data);
+            setStatus("Completed");
+          } catch (e) {
+            setStatus("Failed");
+            setError(e?.message || "Request failed");
+          } finally {
+            clearInterval(timer);
+            setLoading(false);
+          }
+        }
+
+        return (
+          <div className="wrap">
+            <section className="hero">
+              <h1>Call Analytics Live Demo</h1>
+              <p>Upload one MP3 call recording and view live status + final JSON output from the API.</p>
+            </section>
+
+            <section className="grid">
+              <div className="card">
+                <div className="field">
+                  <label>Endpoint URL</label>
+                  <input value={apiUrl} onChange={(e) => setApiUrl(e.target.value)} />
+                </div>
+
+                <div className="field">
+                  <label>x-api-key</label>
+                  <input value={apiKey} onChange={(e) => setApiKey(e.target.value)} />
+                </div>
+
+                <div className="field">
+                  <label>Audio File (MP3)</label>
+                  <input
+                    type="file"
+                    accept="audio/mpeg,audio/mp3"
+                    onChange={(e) => setAudioFile(e.target.files?.[0] || null)}
+                  />
+                </div>
+
+                <div className="row">
+                  <div className="field">
+                    <label>Language Hint</label>
+                    <select value={languageHint} onChange={(e) => setLanguageHint(e.target.value)}>
+                      <option value="ta-en">Tamil (ta-en)</option>
+                      <option value="hi-en">Hindi (hi-en)</option>
+                      <option value="ta">Tamil (ta)</option>
+                      <option value="hi">Hindi (hi)</option>
+                      <option value="en">English (en)</option>
+                    </select>
+                  </div>
+
+                  <div className="field">
+                    <label>Call ID (optional)</label>
+                    <input value={callId} onChange={(e) => setCallId(e.target.value)} placeholder="CALL-123" />
+                  </div>
+                </div>
+
+                <button disabled={loading} onClick={submit}>
+                  {loading ? "Processing..." : "Start Live Demo"}
+                </button>
+
+                <div className={`status ${error ? "err" : "ok"}`}>
+                  {status}
+                  <span className="badge">{loading ? `elapsed ${elapsed}s` : ""}</span>
+                </div>
+
+                {error ? <div className="status err" style={{ marginTop: 8 }}>{error}</div> : null}
+              </div>
+
+              <div className="card">
+                <pre>{result ? JSON.stringify(result, null, 2) : "No response yet."}</pre>
+              </div>
+            </section>
+          </div>
+        );
+      }
+
+      ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+    </script>
+  </body>
+</html>
