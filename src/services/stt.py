@@ -42,6 +42,7 @@ class STTService:
             try:
                 return self._sarvam_transcribe(wav_path, language_hint), "sarvam"
             except Exception as exc:
+                print("Sarvam transcription failed:", repr(exc))
                 errors.append(f"sarvam:{exc}")
 
         if self.settings.whisper_api_key:
@@ -55,6 +56,42 @@ class STTService:
 
         raise HTTPException(status_code=502, detail=f"No STT provider available. {' | '.join(errors)}")
 
+    def _extract_transcript(self, payload: object) -> str:
+        if isinstance(payload, dict):
+            direct = payload.get("transcript") or payload.get("text")
+            if isinstance(direct, str) and direct.strip():
+                return direct.strip()
+
+            nested = payload.get("data")
+            if isinstance(nested, dict):
+                nested_text = nested.get("transcript") or nested.get("text")
+                if isinstance(nested_text, str) and nested_text.strip():
+                    return nested_text.strip()
+
+        for attr in ("transcript", "text"):
+            val = getattr(payload, attr, None)
+            if isinstance(val, str) and val.strip():
+                return val.strip()
+
+        return ""
+
+    def _response_to_dict(self, response: object) -> dict:
+        if isinstance(response, dict):
+            return response
+        if hasattr(response, "model_dump"):
+            try:
+                return response.model_dump()  # type: ignore[attr-defined]
+            except Exception:
+                pass
+        if hasattr(response, "dict"):
+            try:
+                return response.dict()  # type: ignore[attr-defined]
+            except Exception:
+                pass
+        if hasattr(response, "__dict__") and isinstance(response.__dict__, dict):
+            return response.__dict__
+        return {}
+
     def _sarvam_transcribe(self, wav_path: Path, language_hint: str | None) -> str:
         print("Sending audio to Sarvam...")
         client = SarvamAI(api_subscription_key=self.settings.sarvam_api_key)
@@ -64,8 +101,10 @@ class STTService:
                 model="saaras:v3",
                 mode="transcribe",
             )
-        print("Sarvam response:", response)
-        text = getattr(response, "transcript", None) or (response.get("transcript") if isinstance(response, dict) else None)
+        print("Sarvam raw response:", repr(response))
+        parsed = self._response_to_dict(response)
+        print("Sarvam parsed response:", parsed)
+        text = self._extract_transcript(parsed) or self._extract_transcript(response)
         if not text:
             raise ValueError("STT returned empty — investigate Sarvam response")
         return self._normalize_transcript_text(text)
