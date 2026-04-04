@@ -1,59 +1,64 @@
 # AI Call Center Compliance API
 
-Production-ready FastAPI service for the HCL Call Center Compliance challenge.
+FastAPI service for the HCL Track 3 call center compliance challenge.
 
-## Problem Focus
+## Description
 
-This API accepts Base64 audio and returns strict JSON analytics with:
+This API accepts one MP3 call recording at a time via Base64, runs multi-stage AI analysis, and returns structured JSON for:
 
 - Transcript
 - Summary
 - SOP compliance checks and score
-- Payment and rejection classification
+- Payment preference classification
+- Rejection reason detection
 - Sentiment
 - Keywords
+
+## Tech Stack
+
+- Python 3.12
+- FastAPI
+- Pydantic v2
+- Uvicorn
+- Sarvam AI SDK for speech-to-text
+- OpenRouter + Gemini for LLM fallback
+- FFmpeg for audio preprocessing
+- SQLite for persistence
+- FAISS for vector indexing
+- SlowAPI for rate limiting
+
+## Approach
+
+1. Validate request and API key.
+2. Decode Base64 MP3 input.
+3. Normalize audio with FFmpeg.
+4. Split long audio into 29-second chunks.
+5. Transcribe each chunk and merge the transcripts.
+6. Run LLM normalization and summarization.
+7. Extract SOP, analytics, sentiment, and keywords.
+8. Validate the final response contract and return JSON.
+
+## Architecture Overview
+
+1. `POST /api/call-analytics` receives Base64 MP3 input.
+2. `src/utils/audio.py` decodes, preprocesses, and chunks audio.
+3. `src/services/stt.py` transcribes chunks with Sarvam.
+4. `src/services/llm.py` normalizes the merged transcript and builds the summary.
+5. `src/services/pipeline.py` merges all outputs, validates the response, and indexes the transcript in FAISS.
+6. `src/services/sop.py`, `src/services/analytics.py`, and `src/services/nlp.py` produce compliance and business-intelligence fields.
 
 ## Core Features
 
 - Endpoint: `POST /api/call-analytics`
-- API-key auth via `x-api-key`
-- Global rate limiting via `slowapi`
-- Always-on audio normalization: FFmpeg -> mono 16k WAV + `highpass`, `lowpass`, `dynaudnorm`
-- STT fallback: Sarvam (primary) -> Whisper (fallback)
-- LLM fallback: OpenRouter (primary) -> Gemini (fallback)
-- Strict contract validation with Pydantic
-- Language output normalized to `Tamil` or `Hindi`
-- Summary placeholder protection (no mock/placeholder text in output)
-- Domain-aware keyword extraction for Tamil/Hinglish call-center context
-
-## Architecture Overview
-
-1. Request auth + validation
-2. Base64 decode
-3. FFmpeg preprocessing
-4. STT transcription
-5. LLM normalization + summary
-6. SOP validation + analytics + keyword extraction
-7. Contract validation + JSON response
-8. SQLite persistence + optional FAISS indexing
-
-## Endpoint Tester: How To Use
-
-Use the endpoint tester to validate your deployment behavior before submission.
-
-1. Enter deployed API URL
-2. Provide authorization/API key in headers
-3. Click `Test Endpoint`
-
-What this tests:
-
-- Authentication headers
-- Audio input processing
-- Request parsing/validation
-- JSON response formatting
-- API stability/behavior
-
-Note: the official evaluation uses a separate automated system and official audio samples.
+- Mandatory API key auth via `x-api-key`
+- Audio normalization: FFmpeg -> mono 16k WAV + `highpass`, `lowpass`, `dynaudnorm`
+- Chunked transcription for long calls
+- Transcript merge before NLP/LLM analysis
+- Strict response validation with Pydantic
+- Tamil/Hindi language normalization
+- No mock/placeholder summaries in production responses
+- Domain-aware keyword extraction
+- Semantic indexing of transcripts with FAISS
 
 ## API Contract
 
@@ -68,7 +73,7 @@ Note: the official evaluation uses a separate automated system and official audi
 }
 ```
 
-### Response (shape)
+### Response Fields
 
 - `status`
 - `language`
@@ -83,26 +88,26 @@ Note: the official evaluation uses a separate automated system and official audi
 
 ## Local Setup
 
-1. Create and activate virtual environment
-2. Install dependencies
+1. Create and activate a virtual environment.
+2. Install dependencies.
 
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Copy env template and configure keys
+3. Copy the environment template.
 
 ```bash
 cp .env.example .env
 ```
 
-4. Run server
+4. Run the server.
 
 ```bash
 uvicorn src.main:app --host 0.0.0.0 --port 8000
 ```
 
-5. Health check
+5. Verify health.
 
 ```bash
 curl http://127.0.0.1:8000/health
@@ -110,54 +115,46 @@ curl http://127.0.0.1:8000/health
 
 ## Deployment
 
-This repo includes:
+This repo supports Railway, Render, Fly.io, and similar PaaS platforms.
 
-- `Procfile` for simple PaaS startup
-- `runtime.txt` for Python runtime pinning
+Included deployment files:
 
-Recommended free-tier options:
-
-- Render
-- Railway
-- Fly.io
-- Vercel (API hosting pattern)
-- AWS Free Tier
-
-Startup command used by platform:
-
-```bash
-uvicorn src.main:app --host 0.0.0.0 --port $PORT
-```
+- `Dockerfile`
+- `Procfile`
+- `runtime.txt`
 
 Deployment checklist:
 
-1. Set env vars from `.env.example`
-2. Ensure FFmpeg is available in runtime
-3. Keep live URL accessible for at least 48 hours after deadline
+1. Set environment variables from `.env.example` in the host platform.
+2. Ensure FFmpeg is available in the runtime.
+3. Set `ALLOW_MOCK_STT=false` and `ALLOW_MOCK_LLM=false`.
+4. Keep the live URL public and available for 48 hours after submission.
 
-## Submission Requirements
+## Submission Checklist
 
-- Live deployed public URL
-- Public GitHub repository
-- Public demo video link (YouTube or Google Drive)
-- AI tools disclosure in README
-- Optional slide deck
+- Live deployed URL: [add link here]
+- GitHub repository: https://github.com/SajivJess/AI-Call-Center-Compliance---HCL
+- Demo video (YouTube or Google Drive): [add link here]
+- Optional slide deck: [add link here]
+- README includes AI tools disclosure: yes
 
-Video demo requirements:
+## Demo Video Requirements
 
 - 2 to 5 minutes
 - Screen recording with narration
-- Show key features end-to-end
+- Show API auth, upload/test flow, and response output
+- Demonstrate long-audio chunking and merged transcript behavior
 
 ## AI Tools Used
 
-- GitHub Copilot (GPT-5.3-Codex) for implementation support, refactoring, and test scaffolding
+- GitHub Copilot (GPT-5.4 mini) for implementation support, refactoring, testing, and documentation assistance
 
 ## Known Limitations
 
-- External provider latency (STT/LLM) affects response time
-- Accuracy depends on source audio quality and language mixing
-- SQLite is used for lightweight persistence (not horizontal-scale primary DB)
+- Provider latency can increase response time.
+- Accuracy depends on audio quality and language mixing.
+- Long calls require chunking and multiple STT requests.
+- SQLite is used for lightweight persistence, not as a horizontal-scale database.
 
 ## Tests
 
