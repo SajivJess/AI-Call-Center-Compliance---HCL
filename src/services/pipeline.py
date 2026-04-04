@@ -2,6 +2,7 @@ import asyncio
 import os
 from uuid import uuid4
 
+from src.config.settings import get_settings
 from src.schemas.enums import PaymentClassification, RejectionReason, SentimentLabel
 from src.schemas.requests import CallAnalyticsRequest
 from src.schemas.responses import AnalyticsPayload, CallAnalyticsResponse, SOPChecks
@@ -16,6 +17,7 @@ from src.utils.audio import cleanup_files, decode_base64_audio, preprocess_audio
 
 class CallAnalyticsPipeline:
     def __init__(self) -> None:
+        self.settings = get_settings()
         self.stt = STTService()
         self.llm = LLMService()
         self.nlp = NLPService()
@@ -171,21 +173,34 @@ class CallAnalyticsPipeline:
             chunk_dir = chunk_paths[0].parent if chunk_paths else None
             print("Processing chunk count:", len(chunk_paths))
 
-            max_chunk_concurrency = min(8, len(chunk_paths)) if chunk_paths else 1
+            total_chunks = len(chunk_paths)
+            max_sync_chunks = max(1, self.settings.max_sync_chunks)
+            selected_chunk_paths = chunk_paths[:max_sync_chunks]
+            partial_processing = total_chunks > len(selected_chunk_paths)
+            if partial_processing:
+                print(
+                    f"Sync chunk cap applied: transcribing {len(selected_chunk_paths)} of {total_chunks} chunks"
+                )
+
+            max_chunk_concurrency = (
+                min(max(1, self.settings.max_chunk_concurrency), len(selected_chunk_paths))
+                if selected_chunk_paths
+                else 1
+            )
             chunk_semaphore = asyncio.Semaphore(max_chunk_concurrency)
 
             async def transcribe_chunk(index: int, chunk_path):
                 async with chunk_semaphore:
-                    print(f"Transcribing chunk {index + 1}/{len(chunk_paths)}:", chunk_path.name)
+                    print(f"Transcribing chunk {index + 1}/{len(selected_chunk_paths)}:", chunk_path.name)
                     chunk_transcript, chunk_provider = await asyncio.to_thread(self.stt.transcribe, chunk_path, payload.language_hint)
                     return index, chunk_transcript.strip(), chunk_provider
 
             chunk_results = await asyncio.gather(
-                *(transcribe_chunk(index, chunk_path) for index, chunk_path in enumerate(chunk_paths))
+                *(transcribe_chunk(index, chunk_path) for index, chunk_path in enumerate(selected_chunk_paths))
             )
 
-            chunk_transcripts: list[str] = ["" for _ in chunk_paths]
-            chunk_providers: list[str] = ["" for _ in chunk_paths]
+            chunk_transcripts: list[str] = ["" for _ in selected_chunk_paths]
+            chunk_providers: list[str] = ["" for _ in selected_chunk_paths]
             stt_fallback_used = False
             for index, chunk_transcript, chunk_provider in chunk_results:
                 chunk_transcripts[index] = chunk_transcript
@@ -260,8 +275,10 @@ class CallAnalyticsPipeline:
                     "llmFallback": "gemini",
                     "llmStructuredValid": str(llm_result is not None).lower(),
                     "vectorIndexed": str(vector_indexed).lower(),
-                    "chunkingUsed": "true" if len(chunk_paths) > 1 else "false",
-                    "chunkCount": str(len(chunk_paths)),
+                    "chunkingUsed": "true" if total_chunks > 1 else "false",
+                    "chunkCount": str(len(selected_chunk_paths)),
+                    "totalChunkCount": str(total_chunks),
+                    "partialTranscription": str(partial_processing).lower(),
                 },
             )
             return self._validate_response_contract(response)
