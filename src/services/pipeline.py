@@ -25,6 +25,19 @@ class CallAnalyticsPipeline:
         self.analytics = AnalyticsService()
         self.vector_store = FaissStore()
 
+    def _adaptive_chunk_concurrency(self, chunk_count: int) -> int:
+        if chunk_count <= 0:
+            return 1
+        if chunk_count >= 40:
+            return 20
+        if chunk_count >= 30:
+            return 16
+        if chunk_count >= 20:
+            return 12
+        if chunk_count >= 10:
+            return 8
+        return min(6, chunk_count)
+
     def _canonical_language(self, transcript: str, language_hint: str | None = None) -> str:
         if any("\u0b80" <= char <= "\u0bff" for char in transcript):
             return "Tamil"
@@ -183,10 +196,16 @@ class CallAnalyticsPipeline:
                     f"Sync chunk cap applied: transcribing {len(selected_chunk_paths)} of {total_chunks} chunks"
                 )
 
+            selected_count = len(selected_chunk_paths)
+            adaptive_concurrency = self._adaptive_chunk_concurrency(selected_count)
+            configured_concurrency = self.settings.max_chunk_concurrency
             max_chunk_concurrency = (
-                min(max(1, self.settings.max_chunk_concurrency), len(selected_chunk_paths))
-                if selected_chunk_paths
-                else 1
+                min(max(1, configured_concurrency), selected_count)
+                if configured_concurrency > 0
+                else adaptive_concurrency
+            )
+            print(
+                f"Chunk concurrency selected: {max_chunk_concurrency} (chunks={selected_count}, configured={configured_concurrency})"
             )
             chunk_semaphore = asyncio.Semaphore(max_chunk_concurrency)
 
@@ -280,6 +299,7 @@ class CallAnalyticsPipeline:
                     "chunkCount": str(len(selected_chunk_paths)),
                     "totalChunkCount": str(total_chunks),
                     "partialTranscription": str(partial_processing).lower(),
+                    "chunkConcurrency": str(max_chunk_concurrency),
                 },
             )
             return self._validate_response_contract(response)
